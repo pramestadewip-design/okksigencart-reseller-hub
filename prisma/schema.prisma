@@ -1,0 +1,244 @@
+// ============================================================
+// PRISMA SCHEMA — OkksigenCart Reseller Hub
+// ============================================================
+// 11 tabel, sesuai Blueprint Rev. 5 (Final Implementation Checklist).
+// Tidak ada tabel reseller/transaksi/pembayaran apa pun — situs ini
+// murni official website + resource center, terpisah dari Bot Order
+// dan Bot Klaim Garansi (project Telegram yang sudah ada).
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ------------------------------------------------------------
+// ENUMS
+// ------------------------------------------------------------
+
+enum UserRole {
+  OWNER
+  ADMIN
+}
+
+enum FaqAudience {
+  CUSTOMER
+  RESELLER
+}
+
+enum AnnouncementCategory {
+  NEW_PRODUCT
+  RULE_CHANGE
+  PROMO
+  MAINTENANCE
+}
+
+enum MarketingAssetType {
+  POSTER
+  CAPTION
+  BANNER
+  IDEA
+}
+
+enum ReplyCategory {
+  LOGIN
+  PAYMENT
+  RENEWAL
+  WARRANTY
+  GENERAL
+}
+
+// ------------------------------------------------------------
+// IDENTITAS & PUBLIKASI
+// ------------------------------------------------------------
+
+// Akun login OWNER/ADMIN untuk /admin. Dengan CredentialsProvider,
+// NextAuth selalu pakai strategi "jwt" — sengaja tidak ada model
+// Session di sini (lihat lib/auth.ts).
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  role         UserRole @default(ADMIN)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  announcements Announcement[]
+
+  @@map("users")
+}
+
+model Announcement {
+  id          String               @id @default(uuid())
+  title       String
+  body        String               @db.Text
+  category    AnnouncementCategory
+  pinned      Boolean              @default(false)
+  publishedAt DateTime             @default(now()) @map("published_at")
+  authorId    String               @map("author_id")
+  createdAt   DateTime             @default(now()) @map("created_at")
+  updatedAt   DateTime             @updatedAt @map("updated_at")
+
+  author User @relation(fields: [authorId], references: [id])
+
+  @@index([publishedAt])
+  @@index([pinned])
+  @@map("announcements")
+}
+
+// ------------------------------------------------------------
+// PRODUCT KNOWLEDGE
+// ------------------------------------------------------------
+
+model Category {
+  id        String    @id @default(uuid())
+  name      String    @unique
+  slug      String    @unique
+  order     Int       @default(0)
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  products Product[]
+
+  @@map("categories")
+}
+
+// Sumber tunggal untuk halaman produk publik DAN Product Knowledge
+// reseller — tidak ditulis ulang di /reseller.
+model Product {
+  id                   String   @id @default(uuid())
+  slug                 String   @unique
+  name                 String
+  categoryId           String   @map("category_id")
+  active               Boolean  @default(true)
+  description          String   @db.Text
+  benefits             String   @db.Text
+  audience             String   @db.Text
+  limitations          String?  @db.Text
+  deviceSupport        String?  @db.Text @map("device_support")
+  terms                String?  @db.Text
+  warrantyPolicy       String?  @db.Text @map("warranty_policy")
+  marketingExplanation String?  @db.Text @map("marketing_explanation")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  category       Category        @relation(fields: [categoryId], references: [id])
+  faqs           ProductFAQ[]
+  guides         ProductGuide[]
+  replyTemplates ReplyTemplate[]
+
+  @@index([categoryId])
+  @@index([active])
+  @@map("products")
+}
+
+model ProductFAQ {
+  id        String   @id @default(uuid())
+  productId String   @map("product_id")
+  question  String
+  answer    String   @db.Text
+  order     Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@map("product_faqs")
+}
+
+model ProductGuide {
+  id        String   @id @default(uuid())
+  productId String   @map("product_id")
+  title     String
+  content   String   @db.Text
+  order     Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@map("product_guides")
+}
+
+// ------------------------------------------------------------
+// FAQ UMUM & RESELLER CENTER
+// ------------------------------------------------------------
+
+// Tidak terikat produk — isi /faq (tab Customer/Reseller).
+model GeneralFAQ {
+  id        String      @id @default(uuid())
+  audience  FaqAudience
+  question  String
+  answer    String      @db.Text
+  order     Int         @default(0)
+  createdAt DateTime    @default(now()) @map("created_at")
+  updatedAt DateTime    @updatedAt @map("updated_at")
+
+  @@index([audience])
+  @@map("general_faqs")
+}
+
+// Panduan Mulai Jualan di Reseller Center.
+model GuideSection {
+  id        String   @id @default(uuid())
+  title     String
+  content   String   @db.Text
+  order     Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("guide_sections")
+}
+
+// Template balasan reseller ke customer.
+model ReplyTemplate {
+  id            String        @id @default(uuid())
+  category      ReplyCategory
+  title         String
+  templateReply String        @db.Text @map("template_reply")
+  productId     String?       @map("product_id")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  product Product? @relation(fields: [productId], references: [id])
+
+  @@index([category])
+  @@index([productId])
+  @@map("reply_templates")
+}
+
+// Poster, caption, banner untuk Marketing Kit.
+model MarketingAsset {
+  id        String             @id @default(uuid())
+  type      MarketingAssetType
+  title     String
+  fileUrl   String?            @map("file_url")
+  content   String?            @db.Text
+  createdAt DateTime           @default(now()) @map("created_at")
+  updatedAt DateTime           @updatedAt @map("updated_at")
+
+  @@index([type])
+  @@map("marketing_assets")
+}
+
+// Order bot, claim bot, channel, group, kontak admin — dikelompokkan.
+model ImportantLink {
+  id        String   @id @default(uuid())
+  label     String
+  url       String
+  group     String
+  order     Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([group])
+  @@map("important_links")
+}
