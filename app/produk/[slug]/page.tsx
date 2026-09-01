@@ -6,7 +6,6 @@ import { findLinkUrl } from "@/lib/links";
 import { Nav } from "@/components/Nav";
 import { Footer } from "@/components/Footer";
 import { Markdown } from "@/components/Markdown";
-import { FaqAccordion } from "@/components/FaqAccordion";
 import { Button } from "@/components/Button";
 
 export const revalidate = 3600;
@@ -22,7 +21,6 @@ async function getProduct(slug: string) {
     include: {
       category: true,
       guides: { orderBy: { order: "asc" } },
-      faqs: { orderBy: { order: "asc" } },
     },
   });
 }
@@ -40,7 +38,7 @@ export default async function ProductDetailPage({ params }: { params: { slug: st
   const product = await getProduct(params.slug);
   if (!product || !product.active) notFound();
 
-  const orderBotUrl = await findLinkUrl("Order");
+  const [orderBotUrl, claimBotUrl] = await Promise.all([findLinkUrl("Order"), findLinkUrl("Klaim")]);
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -73,14 +71,7 @@ export default async function ProductDetailPage({ params }: { params: { slug: st
           </div>
 
           <div className="mt-5 rounded-2xl border border-line bg-paper-raised p-[18px]">
-            <div className="mb-1.5 text-sm font-bold text-ink">Apa produk ini?</div>
-            <Markdown className="mb-4 text-[13px] text-ink-soft">{product.description}</Markdown>
-
-            <div className="mb-2 text-sm font-bold text-ink">Benefit utama</div>
-            <Markdown className="mb-4 text-[13px] text-ink-soft">{product.benefits}</Markdown>
-
-            <div className="mb-1 text-sm font-bold text-ink">Cocok untuk siapa?</div>
-            <Markdown className="text-[13px] text-ink-soft">{product.audience}</Markdown>
+            <Markdown className="text-[13px] text-ink-soft">{product.description}</Markdown>
           </div>
 
           {product.guides.length > 0 && (
@@ -102,42 +93,44 @@ export default async function ProductDetailPage({ params }: { params: { slug: st
             </div>
           )}
 
-          {product.deviceSupport && (
+          {product.troubleshooting && (
             <div className="mt-7">
-              <h2 className="mb-3 text-base font-bold text-ink">Device & Platform</h2>
-              <Markdown className="text-[13px] text-ink-soft">{product.deviceSupport}</Markdown>
-            </div>
-          )}
-
-          {product.limitations && (
-            <div className="mt-7">
-              <h2 className="mb-2.5 text-base font-bold text-ink">Limitasi</h2>
-              <div className="rounded-xl border border-[#f4e4bd] bg-gold-tint p-3.5">
-                <Markdown className="text-[13px] text-gold-ink">{product.limitations}</Markdown>
+              <h2 className="mb-3 text-base font-bold text-ink">Kendala & Solusi</h2>
+              <div className="rounded-xl border border-line bg-paper-raised p-3.5">
+                <Markdown className="text-[13px] text-ink-soft">{product.troubleshooting}</Markdown>
               </div>
             </div>
           )}
 
-          {product.faqs.length > 0 && (
-            <div className="mt-7">
-              <h2 className="mb-3 text-base font-bold text-ink">FAQ</h2>
-              <FaqAccordion items={product.faqs} />
-            </div>
-          )}
-
-          <Link
-            href={`/ketentuan?produk=${product.slug}`}
-            className="mt-7 flex items-center gap-3 rounded-2xl bg-ink p-[18px]"
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="#a97c3f" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 flex-shrink-0">
-              <path d="M12 2 3 6v6c0 5 4 8 9 10 5-2 9-5 9-10V6l-9-4z" />
-              <path d="M9 12l2 2 4-4" />
-            </svg>
-            <div>
-              <div className="text-[13.5px] font-bold text-white">Lihat ketentuan & garansi</div>
-              <div className="mt-0.5 text-xs text-[#c9beb6]">Khusus {product.name} →</div>
-            </div>
-          </Link>
+          <div className="mt-7 flex flex-col gap-2.5">
+            <Link
+              href={`/ketentuan?produk=${product.slug}`}
+              className="flex items-center gap-3 rounded-2xl bg-ink p-[18px]"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="#a97c3f" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 flex-shrink-0">
+                <path d="M12 2 3 6v6c0 5 4 8 9 10 5-2 9-5 9-10V6l-9-4z" />
+                <path d="M9 12l2 2 4-4" />
+              </svg>
+              <div>
+                <div className="text-[13.5px] font-bold text-white">Lihat ketentuan & garansi</div>
+                <div className="mt-0.5 text-xs text-[#c9beb6]">Khusus {product.name} →</div>
+              </div>
+            </Link>
+            {product.warrantyPolicy && (
+              <a
+                href={claimBotUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-between rounded-2xl border border-line bg-paper-raised p-[18px]"
+              >
+                <div className="text-[13.5px] font-bold text-ink">Ada masalah? Ajukan Klaim Garansi</div>
+                <svg viewBox="0 0 24 24" fill="none" stroke="#7a2a38" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 flex-shrink-0">
+                  <line x1="7" y1="17" x2="17" y2="7" />
+                  <polyline points="7 7 17 7 17 17" />
+                </svg>
+              </a>
+            )}
+          </div>
         </div>
 
         <div className="fixed inset-x-0 bottom-0 flex items-center gap-2.5 border-t border-line bg-paper-raised px-6 py-3.5">

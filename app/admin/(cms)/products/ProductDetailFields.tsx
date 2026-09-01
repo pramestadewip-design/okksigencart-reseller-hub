@@ -7,9 +7,11 @@ import type { Category, Product } from "@prisma/client";
 export function ProductDetailFields({
   categories,
   product,
+  claimBotUrl,
 }: {
   categories: Category[];
   product?: Product;
+  claimBotUrl?: string;
 }) {
   // Kalau belum ada kategori sama sekali (situs baru), dropdown cuma punya
   // opsi "+ Kategori baru..." dan browser otomatis memilihnya — state ini
@@ -48,14 +50,37 @@ export function ProductDetailFields({
         Aktif (tampil di situs publik)
       </label>
 
-      <TextArea label="Apa produk ini? (description)" name="description" defaultValue={product?.description} required rows={3} hint="Mendukung Markdown." />
-      <TextArea label="Benefit utama" name="benefits" defaultValue={product?.benefits} required rows={3} hint="Mendukung Markdown — satu poin per baris dengan '- '." />
-      <TextArea label="Cocok untuk siapa? (audience)" name="audience" defaultValue={product?.audience} required rows={2} />
-      <TextArea label="Device & Platform" name="deviceSupport" defaultValue={product?.deviceSupport} rows={2} />
-      <TextArea label="Limitasi" name="limitations" defaultValue={product?.limitations} rows={2} />
-      <TextArea label="Ketentuan khusus (terms)" name="terms" defaultValue={product?.terms} rows={3} hint="Ditampilkan di halaman Ketentuan & Garansi saat produk ini dipilih." />
-      <TextArea label="Kebijakan garansi khusus" name="warrantyPolicy" defaultValue={product?.warrantyPolicy} rows={3} />
-      <TextArea label="Catatan marketing (internal)" name="marketingExplanation" defaultValue={product?.marketingExplanation} rows={2} hint="Referensi tim, tidak tampil di publik." />
+      <TextArea
+        label="Deskripsi Produk"
+        name="description"
+        defaultValue={product?.description}
+        required
+        rows={5}
+        hint="Mendukung Markdown. Tulis semuanya di sini — apa produknya, benefit, cocok untuk siapa, device yang didukung, dll."
+      />
+      <TextArea
+        label="Syarat dan Ketentuan Produk"
+        name="terms"
+        defaultValue={product?.terms}
+        required
+        rows={4}
+        hint="Ditampilkan di halaman Ketentuan & Garansi saat produk ini dipilih."
+      />
+      <TextArea
+        label="Kendala & Solusi"
+        name="troubleshooting"
+        defaultValue={product?.troubleshooting}
+        rows={4}
+        hint="Contoh: '**Gagal login?** Cek email/password persis huruf besar-kecil.' — satu kendala per paragraf."
+      />
+      <div>
+        <TextArea label="Panduan Garansi" name="warrantyPolicy" defaultValue={product?.warrantyPolicy} rows={4} />
+        {claimBotUrl && (
+          <a href={claimBotUrl} target="_blank" rel="noopener noreferrer" className="mt-1.5 inline-block text-xs font-semibold text-maroon">
+            → Buka Bot Klaim Garansi (untuk dicek/dites)
+          </a>
+        )}
+      </div>
     </>
   );
 }

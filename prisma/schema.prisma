@@ -1,7 +1,8 @@
 // ============================================================
 // PRISMA SCHEMA — OkksigenCart Reseller Hub
 // ============================================================
-// 11 tabel, sesuai Blueprint Rev. 5 (Final Implementation Checklist).
+// 10 tabel — simplifikasi dari blueprint Rev. 5 (ProductFAQ digabung jadi
+// field Product.troubleshooting tunggal atas permintaan pemilik produk).
 // Tidak ada tabel reseller/transaksi/pembayaran apa pun — situs ini
 // murni official website + resource center, terpisah dari Bot Order
 // dan Bot Klaim Garansi (project Telegram yang sudah ada).
@@ -112,45 +113,25 @@ model Category {
 // Sumber tunggal untuk halaman produk publik DAN Product Knowledge
 // reseller — tidak ditulis ulang di /reseller.
 model Product {
-  id                   String   @id @default(uuid())
-  slug                 String   @unique
-  name                 String
-  categoryId           String   @map("category_id")
-  active               Boolean  @default(true)
-  description          String   @db.Text
-  benefits             String   @db.Text
-  audience             String   @db.Text
-  limitations          String?  @db.Text
-  deviceSupport        String?  @db.Text @map("device_support")
-  terms                String?  @db.Text
-  warrantyPolicy       String?  @db.Text @map("warranty_policy")
-  marketingExplanation String?  @db.Text @map("marketing_explanation")
-  createdAt            DateTime @default(now()) @map("created_at")
-  updatedAt            DateTime @updatedAt @map("updated_at")
+  id              String   @id @default(uuid())
+  slug            String   @unique
+  name            String
+  categoryId      String   @map("category_id")
+  active          Boolean  @default(true)
+  description     String   @db.Text
+  terms           String   @db.Text
+  troubleshooting String?  @db.Text
+  warrantyPolicy  String?  @db.Text @map("warranty_policy")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
 
   category       Category        @relation(fields: [categoryId], references: [id])
-  faqs           ProductFAQ[]
   guides         ProductGuide[]
   replyTemplates ReplyTemplate[]
 
   @@index([categoryId])
   @@index([active])
   @@map("products")
-}
-
-model ProductFAQ {
-  id        String   @id @default(uuid())
-  productId String   @map("product_id")
-  question  String
-  answer    String   @db.Text
-  order     Int      @default(0)
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-
-  @@index([productId])
-  @@map("product_faqs")
 }
 
 model ProductGuide {

@@ -58,13 +58,9 @@ export async function createProduct(formData: FormData) {
       categoryId,
       active: bool(formData, "active"),
       description: requiredStr(formData, "description"),
-      benefits: requiredStr(formData, "benefits"),
-      audience: requiredStr(formData, "audience"),
-      limitations: optStr(formData, "limitations"),
-      deviceSupport: optStr(formData, "deviceSupport"),
-      terms: optStr(formData, "terms"),
+      terms: requiredStr(formData, "terms"),
+      troubleshooting: optStr(formData, "troubleshooting"),
       warrantyPolicy: optStr(formData, "warrantyPolicy"),
-      marketingExplanation: optStr(formData, "marketingExplanation"),
     },
   });
 
@@ -92,13 +88,9 @@ export async function updateProduct(id: string, formData: FormData) {
       categoryId,
       active: bool(formData, "active"),
       description: requiredStr(formData, "description"),
-      benefits: requiredStr(formData, "benefits"),
-      audience: requiredStr(formData, "audience"),
-      limitations: optStr(formData, "limitations"),
-      deviceSupport: optStr(formData, "deviceSupport"),
-      terms: optStr(formData, "terms"),
+      terms: requiredStr(formData, "terms"),
+      troubleshooting: optStr(formData, "troubleshooting"),
       warrantyPolicy: optStr(formData, "warrantyPolicy"),
-      marketingExplanation: optStr(formData, "marketingExplanation"),
     },
   });
 
@@ -114,30 +106,6 @@ export async function deleteProduct(id: string) {
   const product = await prisma.product.delete({ where: { id } });
   revalidatePublicProductPages(product.slug);
   redirect("/admin/products");
-}
-
-export async function addProductFaq(productId: string, formData: FormData) {
-  await requireUser();
-  const count = await prisma.productFAQ.count({ where: { productId } });
-  await prisma.productFAQ.create({
-    data: {
-      productId,
-      question: requiredStr(formData, "question"),
-      answer: requiredStr(formData, "answer"),
-      order: count,
-    },
-  });
-  const product = await prisma.product.findUnique({ where: { id: productId } });
-  revalidatePublicProductPages(product?.slug);
-  redirect(`/admin/products/${productId}?tab=faq`);
-}
-
-export async function deleteProductFaq(productId: string, faqId: string) {
-  await requireOwner();
-  await prisma.productFAQ.delete({ where: { id: faqId } });
-  const product = await prisma.product.findUnique({ where: { id: productId } });
-  revalidatePublicProductPages(product?.slug);
-  redirect(`/admin/products/${productId}?tab=faq`);
 }
 
 export async function addProductGuide(productId: string, formData: FormData) {

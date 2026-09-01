@@ -3,22 +3,15 @@ import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { findLinkUrl } from "@/lib/links";
 import { ErrorBanner } from "@/components/admin/ErrorBanner";
 import { SubmitButton } from "@/components/admin/SubmitButton";
 import { Field, TextArea } from "@/components/admin/Field";
 import { ProductDetailFields } from "../ProductDetailFields";
-import {
-  updateProduct,
-  deleteProduct,
-  addProductFaq,
-  deleteProductFaq,
-  addProductGuide,
-  deleteProductGuide,
-} from "../actions";
+import { updateProduct, deleteProduct, addProductGuide, deleteProductGuide } from "../actions";
 
 const TABS = [
   { key: "detail", label: "Detail" },
-  { key: "faq", label: "FAQ Produk" },
   { key: "guide", label: "Cara Penggunaan" },
 ];
 
@@ -29,20 +22,20 @@ export default async function EditProductPage({
   params: { id: string };
   searchParams: { tab?: string; error?: string; saved?: string };
 }) {
-  const [product, categories, session] = await Promise.all([
+  const [product, categories, session, claimBotUrl] = await Promise.all([
     prisma.product.findUnique({
       where: { id: params.id },
-      include: { faqs: { orderBy: { order: "asc" } }, guides: { orderBy: { order: "asc" } } },
+      include: { guides: { orderBy: { order: "asc" } } },
     }),
     prisma.category.findMany({ orderBy: { order: "asc" } }),
     getServerSession(authOptions),
+    findLinkUrl("Klaim"),
   ]);
   if (!product) notFound();
 
   const isOwner = session?.user.role === "OWNER";
   const tab = searchParams.tab ?? "detail";
   const updateProductWithId = updateProduct.bind(null, product.id);
-  const addFaqWithId = addProductFaq.bind(null, product.id);
   const addGuideWithId = addProductGuide.bind(null, product.id);
 
   return (
@@ -77,39 +70,9 @@ export default async function EditProductPage({
 
       {tab === "detail" && (
         <form action={updateProductWithId} className="mt-5 flex flex-col gap-4">
-          <ProductDetailFields categories={categories} product={product} />
+          <ProductDetailFields categories={categories} product={product} claimBotUrl={claimBotUrl} />
           <SubmitButton>Simpan Perubahan</SubmitButton>
         </form>
-      )}
-
-      {tab === "faq" && (
-        <div className="mt-5">
-          <div className="flex flex-col gap-2">
-            {product.faqs.map((faq) => (
-              <div key={faq.id} className="rounded-md border border-line p-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="font-semibold text-ink">{faq.question}</div>
-                  {isOwner && (
-                    <form action={deleteProductFaq.bind(null, product.id, faq.id)}>
-                      <button type="submit" className="text-xs font-semibold text-maroon">
-                        Hapus
-                      </button>
-                    </form>
-                  )}
-                </div>
-                <div className="mt-1 whitespace-pre-wrap text-sm text-ink-soft">{faq.answer}</div>
-              </div>
-            ))}
-            {product.faqs.length === 0 && <p className="text-sm text-ink-faint">Belum ada FAQ untuk produk ini.</p>}
-          </div>
-
-          <form action={addFaqWithId} className="mt-5 flex flex-col gap-3 rounded-md border border-line p-4">
-            <div className="text-sm font-semibold text-ink">Tambah FAQ</div>
-            <Field label="Pertanyaan" name="question" required />
-            <TextArea label="Jawaban" name="answer" required rows={3} />
-            <SubmitButton>Tambah</SubmitButton>
-          </form>
-        </div>
       )}
 
       {tab === "guide" && (
