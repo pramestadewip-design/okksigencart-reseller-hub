@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireUser, requireOwner } from "@/lib/session";
-import { requiredStr, optStr, bool } from "@/lib/form-utils";
+import { requiredStr, optStr, bool, str } from "@/lib/form-utils";
 import { slugify } from "@/lib/slug";
 
 function fail(path: string, message: string): never {
@@ -21,12 +21,17 @@ function revalidatePublicProductPages(slug?: string) {
 
 // Kategori dibuat on-the-fly dari form produk — tidak butuh halaman admin
 // tersendiri. `categoryId` berisi id existing, atau literal "__new__" kalau
-// admin mengetik nama kategori baru di `newCategoryName`.
-async function resolveCategoryId(formData: FormData): Promise<string> {
-  const categoryId = requiredStr(formData, "categoryId");
+// admin mengetik nama kategori baru di `newCategoryName`. `onFailPath` dipakai
+// untuk redirect balik dengan pesan error yang jelas kalau input tidak valid,
+// alih-alih melempar Error mentah (yang cuma tampil sebagai halaman digest
+// generik di production).
+async function resolveCategoryId(formData: FormData, onFailPath: string): Promise<string> {
+  const categoryId = str(formData, "categoryId");
+  if (!categoryId) fail(onFailPath, "Kategori wajib dipilih.");
   if (categoryId !== "__new__") return categoryId;
 
-  const name = requiredStr(formData, "newCategoryName");
+  const name = str(formData, "newCategoryName");
+  if (!name) fail(onFailPath, 'Nama kategori baru wajib diisi kalau memilih "+ Kategori baru...".');
   const slug = slugify(name);
   const existing = await prisma.category.findFirst({ where: { OR: [{ name }, { slug }] } });
   if (existing) return existing.id;
@@ -41,7 +46,7 @@ export async function createProduct(formData: FormData) {
 
   const name = requiredStr(formData, "name");
   const slug = slugify(name);
-  const categoryId = await resolveCategoryId(formData);
+  const categoryId = await resolveCategoryId(formData, "/admin/products/new");
 
   const existingSlug = await prisma.product.findUnique({ where: { slug } });
   if (existingSlug) fail("/admin/products/new", `Produk dengan nama "${name}" sudah ada (slug bentrok).`);
@@ -72,7 +77,7 @@ export async function updateProduct(id: string, formData: FormData) {
 
   const name = requiredStr(formData, "name");
   const slug = slugify(name);
-  const categoryId = await resolveCategoryId(formData);
+  const categoryId = await resolveCategoryId(formData, `/admin/products/${id}`);
 
   const clash = await prisma.product.findFirst({ where: { slug, NOT: { id } } });
   if (clash) fail(`/admin/products/${id}`, `Produk lain sudah memakai slug "${slug}".`);

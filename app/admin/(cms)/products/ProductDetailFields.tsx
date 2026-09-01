@@ -11,7 +11,11 @@ export function ProductDetailFields({
   categories: Category[];
   product?: Product;
 }) {
-  const [newCategory, setNewCategory] = useState(false);
+  // Kalau belum ada kategori sama sekali (situs baru), dropdown cuma punya
+  // opsi "+ Kategori baru..." dan browser otomatis memilihnya — state ini
+  // harus ikut mulai true, atau input "Nama Kategori Baru" tidak muncul
+  // padahal formData categoryId sudah "__new__".
+  const [newCategory, setNewCategory] = useState(categories.length === 0);
 
   return (
     <>
