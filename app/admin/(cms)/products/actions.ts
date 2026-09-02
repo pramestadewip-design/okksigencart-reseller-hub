@@ -124,6 +124,20 @@ export async function addProductGuide(productId: string, formData: FormData) {
   redirect(`/admin/products/${productId}?tab=guide`);
 }
 
+export async function updateProductGuide(productId: string, guideId: string, formData: FormData) {
+  await requireUser();
+  await prisma.productGuide.update({
+    where: { id: guideId },
+    data: {
+      title: requiredStr(formData, "title"),
+      content: requiredStr(formData, "content"),
+    },
+  });
+  const product = await prisma.product.findUnique({ where: { id: productId } });
+  revalidatePublicProductPages(product?.slug);
+  redirect(`/admin/products/${productId}?tab=guide`);
+}
+
 export async function deleteProductGuide(productId: string, guideId: string) {
   await requireOwner();
   await prisma.productGuide.delete({ where: { id: guideId } });

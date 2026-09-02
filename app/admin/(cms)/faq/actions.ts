@@ -25,6 +25,20 @@ export async function addGeneralFaq(formData: FormData) {
   redirect("/admin/faq");
 }
 
+export async function updateGeneralFaq(id: string, formData: FormData) {
+  await requireUser();
+  await prisma.generalFAQ.update({
+    where: { id },
+    data: {
+      audience: requiredStr(formData, "audience") as FaqAudience,
+      question: requiredStr(formData, "question"),
+      answer: requiredStr(formData, "answer"),
+    },
+  });
+  revalidatePath("/faq");
+  redirect("/admin/faq");
+}
+
 export async function deleteGeneralFaq(id: string) {
   await requireOwner();
   await prisma.generalFAQ.delete({ where: { id } });

@@ -4,15 +4,19 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Field, Select, TextArea } from "@/components/admin/Field";
 import { SubmitButton } from "@/components/admin/SubmitButton";
+import { EditableCard } from "@/components/admin/EditableCard";
 import { MarketingAssetForm } from "./MarketingAssetForm";
+import { MarketingAssetItem } from "./MarketingAssetItem";
 import {
   addImportantLink,
+  updateImportantLink,
   deleteImportantLink,
   addGuideSection,
+  updateGuideSection,
   deleteGuideSection,
   addReplyTemplate,
+  updateReplyTemplate,
   deleteReplyTemplate,
-  deleteMarketingAsset,
 } from "./actions";
 
 const SUB_TABS = [
@@ -28,13 +32,6 @@ const REPLY_CATEGORY_LABEL: Record<string, string> = {
   RENEWAL: "Perpanjangan",
   WARRANTY: "Garansi",
   GENERAL: "Umum",
-};
-
-const MARKETING_TYPE_LABEL: Record<string, string> = {
-  POSTER: "Poster",
-  CAPTION: "Caption",
-  BANNER: "Banner",
-  IDEA: "Ide",
 };
 
 export default async function AdminLinksPage({ searchParams }: { searchParams: { tab?: string } }) {
@@ -74,18 +71,26 @@ async function ImportantLinksTab({ isOwner }: { isOwner: boolean }) {
     <div className="mt-5">
       <div className="flex flex-col gap-2">
         {links.map((l) => (
-          <div key={l.id} className="flex items-center justify-between rounded-md border border-line p-3">
-            <div>
-              <span className="mr-2 rounded-full bg-paper px-2 py-0.5 text-[10px] font-semibold uppercase text-ink-faint">{l.group}</span>
-              <span className="font-semibold text-ink">{l.label}</span>
-              <div className="text-xs text-ink-faint">{l.url}</div>
-            </div>
-            {isOwner && (
-              <form action={deleteImportantLink.bind(null, l.id)}>
-                <button type="submit" className="text-xs font-semibold text-maroon">Hapus</button>
-              </form>
-            )}
-          </div>
+          <EditableCard
+            key={l.id}
+            isOwner={isOwner}
+            updateAction={updateImportantLink.bind(null, l.id)}
+            deleteAction={deleteImportantLink.bind(null, l.id)}
+            summary={
+              <>
+                <span className="mr-2 rounded-full bg-paper px-2 py-0.5 text-[10px] font-semibold uppercase text-ink-faint">{l.group}</span>
+                <span className="font-semibold text-ink">{l.label}</span>
+                <div className="text-xs text-ink-faint">{l.url}</div>
+              </>
+            }
+            formFields={
+              <>
+                <Field label="Label" name="label" defaultValue={l.label} required />
+                <Field label="URL" name="url" type="url" defaultValue={l.url} required />
+                <Field label="Grup (mis. Order & Transaksi / Komunitas / Bantuan)" name="group" defaultValue={l.group} required />
+              </>
+            }
+          />
         ))}
         {links.length === 0 && <p className="text-sm text-ink-faint">Belum ada link.</p>}
       </div>
@@ -107,17 +112,24 @@ async function GuideSectionTab({ isOwner }: { isOwner: boolean }) {
     <div className="mt-5">
       <div className="flex flex-col gap-2">
         {guides.map((g) => (
-          <div key={g.id} className="rounded-md border border-line p-3">
-            <div className="flex items-start justify-between gap-3">
-              <div className="font-semibold text-ink">{g.title}</div>
-              {isOwner && (
-                <form action={deleteGuideSection.bind(null, g.id)}>
-                  <button type="submit" className="text-xs font-semibold text-maroon">Hapus</button>
-                </form>
-              )}
-            </div>
-            <div className="mt-1 whitespace-pre-wrap text-sm text-ink-soft">{g.content}</div>
-          </div>
+          <EditableCard
+            key={g.id}
+            isOwner={isOwner}
+            updateAction={updateGuideSection.bind(null, g.id)}
+            deleteAction={deleteGuideSection.bind(null, g.id)}
+            summary={
+              <>
+                <div className="font-semibold text-ink">{g.title}</div>
+                <div className="mt-1 whitespace-pre-wrap text-sm text-ink-soft">{g.content}</div>
+              </>
+            }
+            formFields={
+              <>
+                <Field label="Judul" name="title" defaultValue={g.title} required />
+                <TextArea label="Isi" name="content" defaultValue={g.content} required rows={4} hint="Mendukung Markdown." />
+              </>
+            }
+          />
         ))}
         {guides.length === 0 && <p className="text-sm text-ink-faint">Belum ada panduan.</p>}
       </div>
@@ -137,27 +149,41 @@ async function ReplyTemplateTab({ isOwner }: { isOwner: boolean }) {
     prisma.replyTemplate.findMany({ orderBy: { createdAt: "desc" }, include: { product: true } }),
     prisma.product.findMany({ orderBy: { name: "asc" } }),
   ]);
+  const productOptions = [{ value: "", label: "— Umum, tidak terikat produk —" }, ...products.map((p) => ({ value: p.id, label: p.name }))];
+
   return (
     <div className="mt-5">
       <div className="flex flex-col gap-2">
         {templates.map((t) => (
-          <div key={t.id} className="rounded-md border border-line p-3">
-            <div className="flex items-start justify-between gap-3">
-              <div>
+          <EditableCard
+            key={t.id}
+            isOwner={isOwner}
+            updateAction={updateReplyTemplate.bind(null, t.id)}
+            deleteAction={deleteReplyTemplate.bind(null, t.id)}
+            summary={
+              <>
                 <span className="mr-2 rounded-full bg-paper px-2 py-0.5 text-[10px] font-semibold uppercase text-ink-faint">
                   {REPLY_CATEGORY_LABEL[t.category]}
                 </span>
                 <span className="font-semibold text-ink">{t.title}</span>
                 {t.product && <span className="ml-2 text-xs text-ink-faint">({t.product.name})</span>}
-              </div>
-              {isOwner && (
-                <form action={deleteReplyTemplate.bind(null, t.id)}>
-                  <button type="submit" className="text-xs font-semibold text-maroon">Hapus</button>
-                </form>
-              )}
-            </div>
-            <div className="mt-1 whitespace-pre-wrap text-sm italic text-ink-soft">{t.templateReply}</div>
-          </div>
+                <div className="mt-1 whitespace-pre-wrap text-sm italic text-ink-soft">{t.templateReply}</div>
+              </>
+            }
+            formFields={
+              <>
+                <Select
+                  label="Kategori"
+                  name="category"
+                  defaultValue={t.category}
+                  options={Object.entries(REPLY_CATEGORY_LABEL).map(([value, label]) => ({ value, label }))}
+                />
+                <Field label="Judul" name="title" defaultValue={t.title} required />
+                <TextArea label="Isi Balasan" name="templateReply" defaultValue={t.templateReply} required rows={3} />
+                <Select label="Produk terkait (opsional)" name="productId" defaultValue={t.productId ?? ""} options={productOptions} />
+              </>
+            }
+          />
         ))}
         {templates.length === 0 && <p className="text-sm text-ink-faint">Belum ada template.</p>}
       </div>
@@ -172,12 +198,7 @@ async function ReplyTemplateTab({ isOwner }: { isOwner: boolean }) {
         />
         <Field label="Judul" name="title" required />
         <TextArea label="Isi Balasan" name="templateReply" required rows={3} />
-        <Select
-          label="Produk terkait (opsional)"
-          name="productId"
-          defaultValue=""
-          options={[{ value: "", label: "— Umum, tidak terikat produk —" }, ...products.map((p) => ({ value: p.id, label: p.name }))]}
-        />
+        <Select label="Produk terkait (opsional)" name="productId" defaultValue="" options={productOptions} />
         <SubmitButton>Tambah</SubmitButton>
       </form>
     </div>
@@ -190,19 +211,7 @@ async function MarketingKitTab({ isOwner }: { isOwner: boolean }) {
     <div className="mt-5">
       <div className="flex flex-col gap-2">
         {assets.map((a) => (
-          <div key={a.id} className="flex items-center justify-between rounded-md border border-line p-3">
-            <div>
-              <span className="mr-2 rounded-full bg-paper px-2 py-0.5 text-[10px] font-semibold uppercase text-ink-faint">
-                {MARKETING_TYPE_LABEL[a.type]}
-              </span>
-              <span className="font-semibold text-ink">{a.title}</span>
-            </div>
-            {isOwner && (
-              <form action={deleteMarketingAsset.bind(null, a.id)}>
-                <button type="submit" className="text-xs font-semibold text-maroon">Hapus</button>
-              </form>
-            )}
-          </div>
+          <MarketingAssetItem key={a.id} asset={a} isOwner={isOwner} />
         ))}
         {assets.length === 0 && <p className="text-sm text-ink-faint">Belum ada materi marketing.</p>}
       </div>

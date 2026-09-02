@@ -25,6 +25,22 @@ export async function createAnnouncement(formData: FormData) {
   redirect("/admin/announcements");
 }
 
+export async function updateAnnouncement(id: string, formData: FormData) {
+  await requireUser();
+  await prisma.announcement.update({
+    where: { id },
+    data: {
+      title: requiredStr(formData, "title"),
+      body: requiredStr(formData, "body"),
+      category: requiredStr(formData, "category") as AnnouncementCategory,
+      pinned: bool(formData, "pinned"),
+    },
+  });
+  revalidatePath("/update");
+  revalidatePath("/");
+  redirect("/admin/announcements");
+}
+
 export async function deleteAnnouncement(id: string) {
   await requireOwner();
   await prisma.announcement.delete({ where: { id } });

@@ -7,8 +7,9 @@ import { findLinkUrl } from "@/lib/links";
 import { ErrorBanner } from "@/components/admin/ErrorBanner";
 import { SubmitButton } from "@/components/admin/SubmitButton";
 import { Field, TextArea } from "@/components/admin/Field";
+import { EditableCard } from "@/components/admin/EditableCard";
 import { ProductDetailFields } from "../ProductDetailFields";
-import { updateProduct, deleteProduct, addProductGuide, deleteProductGuide } from "../actions";
+import { updateProduct, deleteProduct, addProductGuide, updateProductGuide, deleteProductGuide } from "../actions";
 
 const TABS = [
   { key: "detail", label: "Detail" },
@@ -79,19 +80,24 @@ export default async function EditProductPage({
         <div className="mt-5">
           <div className="flex flex-col gap-2">
             {product.guides.map((guide) => (
-              <div key={guide.id} className="rounded-md border border-line p-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="font-semibold text-ink">{guide.title}</div>
-                  {isOwner && (
-                    <form action={deleteProductGuide.bind(null, product.id, guide.id)}>
-                      <button type="submit" className="text-xs font-semibold text-maroon">
-                        Hapus
-                      </button>
-                    </form>
-                  )}
-                </div>
-                <div className="mt-1 whitespace-pre-wrap text-sm text-ink-soft">{guide.content}</div>
-              </div>
+              <EditableCard
+                key={guide.id}
+                isOwner={isOwner}
+                updateAction={updateProductGuide.bind(null, product.id, guide.id)}
+                deleteAction={deleteProductGuide.bind(null, product.id, guide.id)}
+                summary={
+                  <>
+                    <div className="font-semibold text-ink">{guide.title}</div>
+                    <div className="mt-1 whitespace-pre-wrap text-sm text-ink-soft">{guide.content}</div>
+                  </>
+                }
+                formFields={
+                  <>
+                    <Field label="Judul Langkah" name="title" defaultValue={guide.title} required />
+                    <TextArea label="Isi" name="content" defaultValue={guide.content} required rows={3} />
+                  </>
+                }
+              />
             ))}
             {product.guides.length === 0 && <p className="text-sm text-ink-faint">Belum ada langkah penggunaan.</p>}
           </div>

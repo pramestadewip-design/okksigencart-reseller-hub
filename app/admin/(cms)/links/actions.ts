@@ -32,6 +32,20 @@ export async function addImportantLink(formData: FormData) {
   redirect("/admin/links?tab=links");
 }
 
+export async function updateImportantLink(id: string, formData: FormData) {
+  await requireUser();
+  await prisma.importantLink.update({
+    where: { id },
+    data: {
+      label: requiredStr(formData, "label"),
+      url: requiredStr(formData, "url"),
+      group: requiredStr(formData, "group"),
+    },
+  });
+  revalidateLinksPages();
+  redirect("/admin/links?tab=links");
+}
+
 export async function deleteImportantLink(id: string) {
   await requireOwner();
   await prisma.importantLink.delete({ where: { id } });
@@ -49,6 +63,19 @@ export async function addGuideSection(formData: FormData) {
       title: requiredStr(formData, "title"),
       content: requiredStr(formData, "content"),
       order: count,
+    },
+  });
+  revalidateLinksPages();
+  redirect("/admin/links?tab=guide");
+}
+
+export async function updateGuideSection(id: string, formData: FormData) {
+  await requireUser();
+  await prisma.guideSection.update({
+    where: { id },
+    data: {
+      title: requiredStr(formData, "title"),
+      content: requiredStr(formData, "content"),
     },
   });
   revalidateLinksPages();
@@ -78,6 +105,21 @@ export async function addReplyTemplate(formData: FormData) {
   redirect("/admin/links?tab=template");
 }
 
+export async function updateReplyTemplate(id: string, formData: FormData) {
+  await requireUser();
+  await prisma.replyTemplate.update({
+    where: { id },
+    data: {
+      category: requiredStr(formData, "category") as ReplyCategory,
+      title: requiredStr(formData, "title"),
+      templateReply: requiredStr(formData, "templateReply"),
+      productId: optStr(formData, "productId"),
+    },
+  });
+  revalidateLinksPages();
+  redirect("/admin/links?tab=template");
+}
+
 export async function deleteReplyTemplate(id: string) {
   await requireOwner();
   await prisma.replyTemplate.delete({ where: { id } });
@@ -95,6 +137,30 @@ export async function addMarketingAsset(formData: FormData) {
       title: requiredStr(formData, "title"),
       fileUrl: optStr(formData, "fileUrl"),
       content: optStr(formData, "content"),
+    },
+  });
+  revalidateLinksPages();
+  redirect("/admin/links?tab=marketing");
+}
+
+// `newFileUrl` sudah berupa URL Blob storage hasil upload client (kalau admin
+// pilih file baru) — kosongkan berarti file lama dipertahankan apa adanya.
+export async function updateMarketingAsset(id: string, formData: FormData) {
+  await requireUser();
+  const newFileUrl = optStr(formData, "fileUrl");
+
+  const before = await prisma.marketingAsset.findUniqueOrThrow({ where: { id } });
+  if (newFileUrl && before.fileUrl) {
+    await del(before.fileUrl).catch(() => {});
+  }
+
+  await prisma.marketingAsset.update({
+    where: { id },
+    data: {
+      type: requiredStr(formData, "type") as MarketingAssetType,
+      title: requiredStr(formData, "title"),
+      content: optStr(formData, "content"),
+      ...(newFileUrl ? { fileUrl: newFileUrl } : {}),
     },
   });
   revalidateLinksPages();
