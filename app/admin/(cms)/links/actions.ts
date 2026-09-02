@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireUser, requireOwner } from "@/lib/session";
 import { requiredStr, optStr } from "@/lib/form-utils";
+import { del } from "@vercel/blob";
 import type { MarketingAssetType, ReplyCategory } from "@prisma/client";
 
 function revalidateLinksPages() {
@@ -102,7 +103,12 @@ export async function addMarketingAsset(formData: FormData) {
 
 export async function deleteMarketingAsset(id: string) {
   await requireOwner();
-  await prisma.marketingAsset.delete({ where: { id } });
+  const asset = await prisma.marketingAsset.delete({ where: { id } });
+  if (asset.fileUrl) {
+    // Best-effort — kalau file sudah tidak ada di Blob storage (mis. dihapus
+    // manual sebelumnya), jangan gagalkan penghapusan row-nya.
+    await del(asset.fileUrl).catch(() => {});
+  }
   revalidateLinksPages();
   redirect("/admin/links?tab=marketing");
 }

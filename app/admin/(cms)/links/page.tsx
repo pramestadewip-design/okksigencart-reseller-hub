@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Field, Select, TextArea } from "@/components/admin/Field";
 import { SubmitButton } from "@/components/admin/SubmitButton";
+import { MarketingAssetForm } from "./MarketingAssetForm";
 import {
   addImportantLink,
   deleteImportantLink,
@@ -11,7 +12,6 @@ import {
   deleteGuideSection,
   addReplyTemplate,
   deleteReplyTemplate,
-  addMarketingAsset,
   deleteMarketingAsset,
 } from "./actions";
 
@@ -207,19 +207,7 @@ async function MarketingKitTab({ isOwner }: { isOwner: boolean }) {
         {assets.length === 0 && <p className="text-sm text-ink-faint">Belum ada materi marketing.</p>}
       </div>
 
-      <form action={addMarketingAsset} className="mt-6 flex flex-col gap-3 rounded-md border border-line p-4">
-        <div className="text-sm font-semibold text-ink">Tambah Materi</div>
-        <Select
-          label="Tipe"
-          name="type"
-          defaultValue="POSTER"
-          options={Object.entries(MARKETING_TYPE_LABEL).map(([value, label]) => ({ value, label }))}
-        />
-        <Field label="Judul" name="title" required />
-        <Field label="URL File (opsional)" name="fileUrl" type="url" />
-        <TextArea label="Isi Caption (opsional)" name="content" rows={2} />
-        <SubmitButton>Tambah</SubmitButton>
-      </form>
+      <MarketingAssetForm />
     </div>
   );
 }
