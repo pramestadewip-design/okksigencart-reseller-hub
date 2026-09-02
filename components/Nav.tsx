@@ -21,12 +21,23 @@ export function Nav() {
         <Link href="/" className="font-display text-lg font-extrabold text-ink" onClick={() => setOpen(false)}>
           OkksigenCart
         </Link>
+
+        {/* Desktop: link langsung terlihat, tidak disembunyikan di menu */}
+        <nav className="hidden md:flex md:items-center md:gap-6">
+          {NAV_LINKS.map((link) => (
+            <Link key={link.href} href={link.href} className="text-sm font-semibold text-ink-soft hover:text-ink">
+              {link.label}
+            </Link>
+          ))}
+        </nav>
+
+        {/* Mobile: tetap hamburger, ruang terbatas */}
         <button
           type="button"
           aria-label="Buka menu"
           aria-expanded={open}
           onClick={() => setOpen((v) => !v)}
-          className="flex h-8 w-8 flex-col items-center justify-center gap-[5px]"
+          className="flex h-8 w-8 flex-col items-center justify-center gap-[5px] md:hidden"
         >
           <span className={`block h-[2px] w-5 bg-ink transition-transform ${open ? "translate-y-[7px] rotate-45" : ""}`} />
           <span className={`block h-[2px] w-5 bg-ink transition-opacity ${open ? "opacity-0" : ""}`} />
@@ -35,7 +46,7 @@ export function Nav() {
       </div>
 
       {open && (
-        <nav className="border-t border-line bg-paper-raised px-5 py-3">
+        <nav className="border-t border-line bg-paper-raised px-5 py-3 md:hidden">
           <ul className="mx-auto flex max-w-5xl flex-col divide-y divide-line-soft">
             {NAV_LINKS.map((link) => (
               <li key={link.href}>
