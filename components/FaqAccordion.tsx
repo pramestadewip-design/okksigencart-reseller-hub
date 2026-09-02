@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import ReactMarkdown from "react-markdown";
+import { Markdown } from "./Markdown";
 
 type FaqItem = {
   id: string;
@@ -37,11 +37,7 @@ export function FaqAccordion({ items }: { items: FaqItem[] }) {
                 <polyline points="6 9 12 15 18 9" />
               </svg>
             </button>
-            {isOpen && (
-              <div className="mt-2 text-[12.5px] leading-relaxed text-ink-soft [&_a]:underline [&_p+p]:mt-2">
-                <ReactMarkdown>{item.answer}</ReactMarkdown>
-              </div>
-            )}
+            {isOpen && <Markdown className="mt-2 text-[12.5px] text-ink-soft">{item.answer}</Markdown>}
           </div>
         );
       })}
