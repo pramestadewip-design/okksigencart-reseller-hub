@@ -30,8 +30,8 @@ function LinkRow({ href, label }: { href: string; label: string }) {
 export default async function ResellerCenterPage() {
   const [guides, marketingAssets, replyTemplates] = await Promise.all([
     prisma.guideSection.findMany({ orderBy: { order: "asc" } }),
-    prisma.marketingAsset.findMany({ orderBy: { createdAt: "desc" }, take: 6 }),
-    prisma.replyTemplate.findMany({ orderBy: { createdAt: "desc" }, take: 6 }),
+    prisma.marketingAsset.findMany({ orderBy: { createdAt: "desc" } }),
+    prisma.replyTemplate.findMany({ orderBy: { createdAt: "desc" } }),
   ]);
 
   return (
